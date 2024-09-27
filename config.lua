@@ -2,7 +2,7 @@ Config = {}
 
 Config.AllowedGroups = { "admin", "mod" }
 
-Config.WebhookUrl = "https://discord.com/api/webhooks/1284844837773905983/ly6IXvHD2kdDcQ2rNMUKbSN8eYSzqUqJwA5v1if6WUsrPsBJKddpUTKQMG-MdADr04K3"
+Config.WebhookUrl = "YOUR_WEBHOOK_HERE"
 
 Config.Texts = {
     totalAmountLabel = "💰 Total Amount:",
