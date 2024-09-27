@@ -1,0 +1,14 @@
+{
+    "totalAmountLabel": "💰 Total Amount:",
+    "cryptoAmountLabel": "₿ Crypto Amount:",
+    "serverEconomyTitle": "Server Economy",
+    "cashLabel": "Cash 💵",
+    "bankLabel": "Bank 🏦",
+    "cryptoLabel": "Crypto ₿",
+    "totalLabel": "Total 💰",
+    "closeButton": "Close",
+    "prevPageButton": "<",
+    "nextPageButton": ">",
+    "copyButton": "Send to Discord",
+    "searchPlaceholder": "Search for player name..."
+}

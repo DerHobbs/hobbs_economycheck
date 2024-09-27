@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">Server Economy</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+            display: none;
+        }
+
+        #total-amount {
+            position: absolute;
+            top: 0px;
+            left: 20px;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        #crypto-amount {
+            position: absolute;
+            top: 30px;
+            left: 20px;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        h1 {
+            margin-top: 50px;
+            text-align: center;
+            color: #fff;
+        }
+
+        .dialog-container {
+            position: relative;
+            background-color: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            width: 700px;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        h1, h2 {
+            text-align: center;
+            color: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table th, table td {
+            padding: 10px;
+            text-align: left;
+            color: #fff;
+        }
+
+        table th {
+            background-color: #333;
+            color: #fff;
+        }
+
+        table th.sortable {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        table th.sortable:hover {
+            background-color: #555;
+        }
+
+        table td {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        table td.green {
+            color: #00ff00;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: #36ff9ea1;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #36FF9F;
+        }
+
+        .emoji {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+
+        #search-input {
+            width: calc(100% - 40px);
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="dialog-container">
+        <h2 id="total-amount">💰 Total Amount: $0</h2>
+        <h2 id="crypto-amount">₿ Crypto Amount: $0</h2>
+        <h1 id="economy-title">Server Economy</h1>
+        <input type="text" id="search-input" placeholder="Search for player name...">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Playername</th>
+                    <th class="sortable" id="cash-label">Cash 💵</th>
+                    <th class="sortable" id="bank-label">Bank 🏦</th>
+                    <th class="sortable" id="crypto-label">Crypto ₿</th>
+                    <th class="sortable" id="total-label">Total 💰</th>
+                </tr>
+            </thead>
+            <tbody id="player-list">
+            </tbody>
+        </table>
+        <div class="button-container">
+            <button id="prev-page"><</button>
+            <button id="close-btn">Close</button>
+            <button id="next-page">></button>
+        </div>
+        <button id="copy-btn" style="position: absolute; top: 10px; right: 20px;">Send to Discord</button>
+        <textarea id="copy-textarea" style="position: absolute; left: -9999px; top: -9999px;"></textarea>        
+    </div>
+    
+    <script>
+        let currentPage = 1;
+        const playersPerPage = 15;
+        let players = [];
+        let filteredPlayers = [];
+        let cryptoTotal = 0;
+        let texts = {};
+        let webhookUrl = "";
+
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'show') {
+                document.body.style.display = 'flex';
+                players = event.data.players;
+                texts = event.data.texts || {};
+                webhookUrl = event.data.webhookUrl || '';
+
+                document.getElementById('total-amount').textContent = texts.totalAmountLabel + " $0";
+                document.getElementById('crypto-amount').textContent = texts.cryptoAmountLabel + " $0";
+                document.getElementById('economy-title').textContent = texts.serverEconomyTitle || "Server Economy";
+                document.getElementById('search-input').placeholder = texts.searchPlaceholder || "Search for player name...";
+                document.getElementById('cash-label').textContent = texts.cashLabel || "Cash 💵";
+                document.getElementById('bank-label').textContent = texts.bankLabel || "Bank 🏦";
+                document.getElementById('crypto-label').textContent = texts.cryptoLabel || "Crypto ₿";
+                document.getElementById('total-label').textContent = texts.totalLabel || "Total 💰";
+                document.getElementById('close-btn').textContent = texts.closeButton || "Close";
+                document.getElementById('prev-page').textContent = texts.prevPageButton || "<";
+                document.getElementById('next-page').textContent = texts.nextPageButton || ">";
+                document.getElementById('copy-btn').textContent = texts.copyButton || "Send to Discord";
+
+                filteredPlayers = players;
+                cryptoTotal = players.reduce((sum, player) => sum + player.crypto, 0);
+                updateTotalAmount(event.data.totalAmount);
+                updateCryptoAmount(cryptoTotal);
+                renderPage(currentPage);
+            } else if (event.data.type === 'hide') {
+                document.body.style.display = 'none';
+            }
+        });
+
+        function renderPage(page) {
+            const startIndex = (page - 1) * playersPerPage;
+            const endIndex = Math.min(startIndex + playersPerPage, filteredPlayers.length);
+            const playerList = document.getElementById('player-list');
+            playerList.innerHTML = '';
+
+            for (let i = startIndex; i < endIndex; i++) {
+                const player = filteredPlayers[i];
+                const row = document.createElement('tr');
+
+                const rankCell = document.createElement('td');
+                rankCell.textContent = i + 1;
+                row.appendChild(rankCell);
+
+                const nameCell = document.createElement('td');
+                nameCell.textContent = player.name;
+                row.appendChild(nameCell);
+
+                const cashCell = document.createElement('td');
+                cashCell.textContent = `💵 ${player.cash.toLocaleString()}`;
+                cashCell.classList.add('green');
+                row.appendChild(cashCell);
+
+                const bankCell = document.createElement('td');
+                bankCell.textContent = `🏦 ${player.bank.toLocaleString()}`;
+                bankCell.classList.add('green');
+                row.appendChild(bankCell);
+
+                const cryptoCell = document.createElement('td');
+                cryptoCell.textContent = `₿ ${player.crypto.toLocaleString()}`;
+                row.appendChild(cryptoCell);
+
+                const totalCell = document.createElement('td');
+                totalCell.textContent = `💰 ${player.total.toLocaleString()}`;
+                totalCell.classList.add('green');
+                row.appendChild(totalCell);
+
+                if (i === 0) {
+                    rankCell.innerHTML = '🥇';
+                } else if (i === 1) {
+                    rankCell.innerHTML = '🥈';
+                } else if (i === 2) {
+                    rankCell.innerHTML = '🥉';
+                }
+
+                playerList.appendChild(row);
+            }
+        }
+
+        function updateTotalAmount(totalAmount) {
+            document.getElementById('total-amount').textContent = texts.totalAmountLabel + ` $${totalAmount.toLocaleString()}`;
+        }
+
+        function updateCryptoAmount(cryptoAmount) {
+            document.getElementById('crypto-amount').textContent = texts.cryptoAmountLabel + ` $${cryptoAmount.toLocaleString()}`;
+        }
+
+        document.getElementById('next-page').addEventListener('click', function() {
+            if (currentPage * playersPerPage < filteredPlayers.length) {
+                currentPage++;
+                renderPage(currentPage);
+            }
+        });
+
+        document.getElementById('prev-page').addEventListener('click', function() {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPage(currentPage);
+            }
+        });
+
+        document.getElementById('close-btn').addEventListener('click', function() {
+            closeNUI();
+        });
+
+        document.querySelectorAll('th.sortable').forEach(th => {
+            th.addEventListener('click', function() {
+                const column = this.textContent.trim();
+                if (column.includes(texts.totalLabel)) {
+                    filteredPlayers.sort((a, b) => b.total - a.total);
+                } else if (column.includes(texts.cryptoLabel)) {
+                    filteredPlayers.sort((a, b) => b.crypto - a.crypto);
+                } else if (column.includes(texts.cashLabel)) {
+                    filteredPlayers.sort((a, b) => b.cash - a.cash);
+                } else if (column.includes(texts.bankLabel)) {
+                    filteredPlayers.sort((a, b) => b.bank - a.bank);
+                }
+                renderPage(1);
+            });
+        });
+
+        document.getElementById('copy-btn').addEventListener('click', function () {
+            const embedFields = filteredPlayers.map((player, index) => {
+                const rankEmoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}.`;
+                return {
+                    name: `${rankEmoji} ${player.name}`,
+                    value: `💵 Cash: $${player.cash.toLocaleString()}, 🏦 Bank: $${player.bank.toLocaleString()}, ₿ Crypto: $${player.crypto.toLocaleString()}, 💰 Total: $${player.total.toLocaleString()}`,
+                    inline: false
+                };
+            });
+
+            fetch(webhookUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    embeds: [{
+                        title: texts.serverEconomyTitle,
+                        color: 3066993,
+                        fields: embedFields
+                    }]
+                })
+            }).then(() => {
+                closeNUI(); 
+            });
+        });
+
+        function closeNUI() {
+            fetch(`https://${GetParentResourceName()}/close`, {
+                method: 'POST'
+            }).then(() => {
+                document.body.style.display = 'none';
+            });
+        }
+
+        document.getElementById('search-input').addEventListener('input', function () {
+            const searchValue = this.value.toLowerCase();
+            filteredPlayers = players.filter(player => player.name.toLowerCase().includes(searchValue));
+            renderPage(1);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                closeNUI();
+            }
+        });
+    </script>    
+</body>
+</html>
