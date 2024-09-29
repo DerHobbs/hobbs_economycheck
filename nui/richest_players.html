@@ -167,7 +167,7 @@
                 webhookUrl = event.data.webhookUrl || '';
 
                 document.getElementById('total-amount').textContent = texts.totalAmountLabel + " $0";
-                document.getElementById('crypto-amount').textContent = texts.cryptoAmountLabel + " $0";
+                document.getElementById('crypto-amount').textContent = texts.cryptoAmountLabel + " 0";
                 document.getElementById('economy-title').textContent = texts.serverEconomyTitle || "Server Economy";
                 document.getElementById('search-input').placeholder = texts.searchPlaceholder || "Search for player name...";
                 document.getElementById('cash-label').textContent = texts.cashLabel || "Cash 💵";
@@ -243,7 +243,7 @@
         }
 
         function updateCryptoAmount(cryptoAmount) {
-            document.getElementById('crypto-amount').textContent = texts.cryptoAmountLabel + ` $${cryptoAmount.toLocaleString()}`;
+            document.getElementById('crypto-amount').textContent = texts.cryptoAmountLabel + ` ${cryptoAmount.toLocaleString()}`;
         }
 
         document.getElementById('next-page').addEventListener('click', function() {
